@@ -10,7 +10,7 @@ import datasets
 from PIL import Image
 
 def prepare_iu_xray(out_dir: Path):
-    ds = datasets.load_dataset("iu_xray", split="train+validation+test")
+    ds = datasets.load_dataset("Jyothirmai/iu-xray-dataset", split="train")
     out_dir.mkdir(parents=True, exist_ok=True)
     images, reports = [], []
     for row in ds:
