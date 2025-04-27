@@ -14,8 +14,11 @@ def prepare_iu_xray(out_dir: Path):
     out_dir.mkdir(parents=True, exist_ok=True)
     images, reports = [], []
     for row in ds:
-        # only take PA view first image
-        img = row["image"][0] if isinstance(row["image"], list) else row["image"]
+        # dataset stores local file path string; open image
+        img_field = row.get("image") or row.get("image_path")
+        if isinstance(img_field, list):
+            img_field = img_field[0]
+        img = Image.open(img_field).convert("RGB")
         findings = row["findings"].strip()
         if not findings:
             continue
