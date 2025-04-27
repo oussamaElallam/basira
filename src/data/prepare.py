@@ -18,7 +18,12 @@ def prepare_iu_xray(out_dir: Path):
         img_field = row.get("image") or row.get("image_path")
         if isinstance(img_field, list):
             img_field = img_field[0]
-        img = Image.open(img_field).convert("RGB")
+        if img_field is None:
+            continue
+        try:
+            img = Image.open(img_field).convert("RGB") if isinstance(img_field, str) else img_field.convert("RGB")
+        except Exception:
+            continue
         findings = row["findings"].strip()
         if not findings:
             continue
@@ -42,3 +47,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
