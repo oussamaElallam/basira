@@ -12,7 +12,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoProcessor, TrainingArguments
 MODEL_NAME = "google/paligemma2-3b"
 
 def load_data(path: Path):
-    ds = datasets.Dataset.from_parquet(path / "dataset.parquet")
+    ds = datasets.Dataset.from_parquet(str(path / "dataset.parquet"))
     processor = AutoProcessor.from_pretrained(MODEL_NAME)
     tokenizer = processor.tokenizer
 
@@ -54,4 +54,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
