@@ -3,9 +3,9 @@ Minimal: single-GPU, resume-friendly.
 """
 import argparse
 from pathlib import Path
-
 import torch
-from datasets import load_dataset
+import datasets
+from PIL import Image
 from peft import LoraConfig, get_peft_model
 from transformers import AutoModelForSeq2SeqLM, AutoProcessor, TrainingArguments, Trainer
 
@@ -13,13 +13,14 @@ MODEL_NAME = "google/paligemma2-3b"
 
 def load_data(path: Path):
     ds = datasets.Dataset.from_parquet(path / "dataset.parquet")
+    processor = AutoProcessor.from_pretrained(MODEL_NAME)
+    tokenizer = processor.tokenizer
+
     def preprocess(batch):
-        image = Image.open(batch["image_path"])  # RGB 224
+        image = Image.open(batch["image_path"]).convert("RGB")
         batch["pixel_values"] = processor(image, return_tensors="pt").pixel_values[0]
         batch["labels"] = tokenizer(batch["report"], truncation=True, max_length=256).input_ids
         return batch
-    tokenizer = AutoProcessor.from_pretrained(MODEL_NAME).tokenizer
-    processor = AutoProcessor.from_pretrained(MODEL_NAME)
     ds = ds.map(preprocess, batched=False)
     return ds, tokenizer, processor
 
@@ -53,3 +54,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
