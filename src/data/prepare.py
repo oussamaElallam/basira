@@ -13,6 +13,7 @@ def prepare_iu_xray(out_dir: Path):
     ds = datasets.load_dataset("Jyothirmai/iu-xray-dataset", split="train")
     out_dir.mkdir(parents=True, exist_ok=True)
     images, reports = [], []
+    uid_counter = 0
     for row in ds:
         # dataset stores local file path string; open image
         img_field = row.get("image") or row.get("image_path")
@@ -24,14 +25,20 @@ def prepare_iu_xray(out_dir: Path):
             img = Image.open(img_field).convert("RGB") if isinstance(img_field, str) else img_field.convert("RGB")
         except Exception:
             continue
-        findings = row["findings"].strip()
-        if not findings:
+        text = None
+        for key in ["findings", "report", "caption", "sentence", "text"]:
+            if key in row and isinstance(row[key], str) and row[key].strip():
+                text = row[key].strip()
+                break
+        if not text:
             continue
         # save image
-        img_path = out_dir / f"{row['uid']}.png"
+        uid = str(row.get("uid") or row.get("id") or uid_counter)
+        img_path = out_dir / f"{uid}.png"
         img.resize((224, 224)).save(img_path)
         images.append(str(img_path))
-        reports.append(findings)
+        reports.append(text)
+        uid_counter += 1
     datasets.Dataset.from_dict({"image_path": images, "report": reports}).to_parquet(out_dir / "dataset.parquet")
     print(f"Saved {len(images)} samples to {out_dir}")
 
@@ -47,4 +54,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

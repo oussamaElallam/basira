@@ -28,9 +28,24 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--out", type=Path, default=Path("outputs/basira-lora"))
+    parser.add_argument("--stream", action="store_true", help="Use streaming dataset (no parquet)")
     args = parser.parse_args()
 
-    ds, tokenizer, processor = load_data(args.data)
+    if args.stream:
+        ds_stream = datasets.load_dataset("MITAI/mimic_cxr_reports", split="train", streaming=True)
+        processor = AutoProcessor.from_pretrained(MODEL_NAME)
+        tokenizer = processor.tokenizer
+        def gen():
+            for row in ds_stream:
+                txt = row.get("findings") or ""
+                img_path = row.get("image_path") or ""
+                if not txt or not img_path:
+                    continue
+                yield {"image_path": img_path, "report": txt}
+        ds = datasets.Dataset.from_generator(gen)
+    else:
+        ds, tokenizer, processor = load_data(args.data)
+
     model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, torch_dtype=torch.float16, device_map="auto")
 
     peft_cfg = LoraConfig(r=8, lora_alpha=16, target_modules=["q_proj", "v_proj"], lora_dropout=0.05)
@@ -54,5 +69,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
